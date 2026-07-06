@@ -26,20 +26,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 构建.NET10镜像并推送到shuangliao/k8s-test-webapi
+      # 构建.NET10镜像并推送到liaoshuang/k8s-test-webapi
       - name: Build & push image
         uses: docker/build-push-action@v5
         with:
           context: ./K8sTest.WebApi
           push: true
-          tags: shuangliao/k8s-test-webapi:${{ env.VERSION }}
+          tags: liaoshuang/k8s-test-webapi:${{ env.VERSION }}
 
       # 自动替换k8s/deployment.yaml中的镜像版本并提交回Git
       - name: Auto update k8s yaml image tag
         run: |
           git config --global user.name "ci-bot"
           git config --global user.email "ci-bot@github.com"
-          sed -i "s|image: .*k8s-test-webapi:.*|image: shuangliao/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
+          sed -i "s|image: .*k8s-test-webapi:.*|image: liaoshuang/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
           git add k8s/deployment.yaml
           git diff --quiet && git diff --staged --quiet || git commit -m "auto update image tag v${{ env.VERSION }}"
           git push origin master
