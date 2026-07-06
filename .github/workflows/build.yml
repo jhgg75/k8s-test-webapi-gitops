@@ -8,14 +8,13 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     env:
-      # 消除 Node20 弃用警告
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout full code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CI_PAT }}
           persist-credentials: true
           clean: true
           sparse-checkout-cone-mode: true
@@ -49,13 +48,11 @@ jobs:
         run: |
           git config --global user.name "ci-bot"
           git config --global user.email "ci-bot@github.com"
-          git fetch origin
-          git checkout -B master origin/master
           sed -i "s|image: .*k8s-test-webapi:.*|image: liaoshuang/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
           git add k8s/deployment.yaml
           if git diff --cached --quiet; then
             echo "No yaml changes, skip commit"
           else
             git commit -m "auto update image tag v${{ env.VERSION }}"
-            git push origin master
+            git push origin HEAD:master
           fi
