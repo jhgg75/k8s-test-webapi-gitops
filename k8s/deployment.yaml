@@ -16,7 +16,7 @@ spec:
       containers:
       - name: webapi
         # 替换为你的DockerHub账号
-        image: shuangliao/k8s-test-webapi:v1.0.0
+        image: liaoshuang/k8s-test-webapi:2.0.4
         ports:
         - containerPort: 8080
 ---
