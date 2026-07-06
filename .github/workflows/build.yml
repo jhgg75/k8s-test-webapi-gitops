@@ -1,5 +1,4 @@
 name: Build & Push Image On Tag
-# 仅推送v开头tag才触发流水线
 on:
   push:
     tags:
@@ -9,26 +8,21 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     steps:
-      # 拉取完整代码 + 授予写入权限token
       - name: Checkout full code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true
           token: ${{ github.TOKEN }}
 
-      # 提取tag版本号，v1.0.0 → 1.0.0
       - name: Extract version tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      # 登录DockerHub
       - name: Login DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 构建推送镜像（账号修正为liaoshuang）
       - name: Build & push image
         uses: docker/build-push-action@v5
         with:
@@ -36,15 +30,21 @@ jobs:
           push: true
           tags: liaoshuang/k8s-test-webapi:${{ env.VERSION }}
 
-      # 自动更新yaml镜像版本并切回master推送
       - name: Auto update k8s yaml image tag
         run: |
           git config --global user.name "ci-bot"
           git config --global user.email "ci-bot@github.com"
+          # 拉取所有远程分支
+          git fetch origin
           # 切换到master分支
-          git checkout master
-          # 替换镜像地址
+          git checkout origin/master -B master
+          # 替换镜像版本
           sed -i "s|image: .*k8s-test-webapi:.*|image: liaoshuang/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
           git add k8s/deployment.yaml
           # 有变更才提交推送
-          git diff --quiet && git diff --staged --quiet || (git commit -m "auto update image tag v${{ env.VERSION }}" && git push origin master)
+          if git diff --cached --quiet; then
+            echo "No yaml changes, skip commit"
+          else
+            git commit -m "auto update image tag v${{ env.VERSION }}"
+            git push origin master
+          fi
