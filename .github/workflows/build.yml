@@ -1,4 +1,5 @@
 name: Build & Push Image On Tag
+run-name: ${{ github.ref_name }}
 on:
   push:
     tags:
