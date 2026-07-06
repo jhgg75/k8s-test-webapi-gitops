@@ -9,21 +9,23 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     env:
-      # 消除Node20弃用警告
+      # 消除 Node20 弃用警告
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout full code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 这里必须配置仓库Secret CI_PAT才不会空
+          # 必须先在仓库 Settings → Secrets and variables → Actions 中创建名为 CI_PAT 的 Secret
+          # 该 Token 需要拥有 repo 权限（经典 Token）或对应仓库的读写权限（细粒度 Token）
           token: ${{ secrets.CI_PAT }}
 
       - name: Extract version tag
         run: |
           echo "RAW REF: $GITHUB_REF"
-          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          echo "Parsed Version: ${{ env.VERSION }}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Parsed Version: ${VERSION}"
 
       - name: Login DockerHub
         uses: docker/login-action@v3
