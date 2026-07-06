@@ -1,6 +1,5 @@
 name: Build & Push Image On Tag
 
-# 仅推送 v开头tag 触发
 on:
   push:
     tags:
@@ -9,16 +8,22 @@ on:
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    # 消除Node20弃用警告（可选加）
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout full code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 替换为拥有repo写入权限的PAT
+          # 修正变量名 github.token
           token: ${{ secrets.CI_PAT }}
 
       - name: Extract version tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          echo "RAW REF: $GITHUB_REF"
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          echo "Parsed Version: ${{ env.VERSION }}"
 
       - name: Login DockerHub
         uses: docker/login-action@v3
@@ -38,12 +43,9 @@ jobs:
           git config --global user.name "ci-bot"
           git config --global user.email "ci-bot@github.com"
           git fetch origin
-          # 拉取最新master，切换本地master分支
           git checkout -B master origin/master
-          # 替换镜像tag
           sed -i "s|image: .*k8s-test-webapi:.*|image: liaoshuang/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
           git add k8s/deployment.yaml
-          # 判断是否有修改
           if git diff --cached --quiet; then
             echo "No yaml changes, skip commit"
           else
