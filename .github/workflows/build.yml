@@ -1,4 +1,6 @@
 name: Build & Push Image On Tag
+
+# 仅推送 v开头tag 触发
 on:
   push:
     tags:
@@ -12,7 +14,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ github.TOKEN }}
+          # 替换为拥有repo写入权限的PAT
+          token: ${{ secrets.CI_PAT }}
 
       - name: Extract version tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
@@ -34,14 +37,13 @@ jobs:
         run: |
           git config --global user.name "ci-bot"
           git config --global user.email "ci-bot@github.com"
-          # 拉取所有远程分支
           git fetch origin
-          # 切换到master分支
-          git checkout origin/master -B master
-          # 替换镜像版本
+          # 拉取最新master，切换本地master分支
+          git checkout -B master origin/master
+          # 替换镜像tag
           sed -i "s|image: .*k8s-test-webapi:.*|image: liaoshuang/k8s-test-webapi:${{ env.VERSION }}|g" k8s/deployment.yaml
           git add k8s/deployment.yaml
-          # 有变更才提交推送
+          # 判断是否有修改
           if git diff --cached --quiet; then
             echo "No yaml changes, skip commit"
           else
